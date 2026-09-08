@@ -45,13 +45,14 @@
     color: var(--text);
     cursor: pointer;
     font-size: 0.95rem;
-    transition: all 0.15s;
   }
-  .mode-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .mode-btn:hover { border-color: var(--accent); }
   .mode-btn.active { border-color: var(--accent); background: #1f1418; }
   .mode-btn small { display: block; color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
   .section { display: none; }
   .section.active { display: block; }
+  .section .q { display: none; }
+  .section .q.visible { display: block; }
   .q {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -73,7 +74,6 @@
     cursor: pointer;
     text-align: center;
     font-size: 0.9rem;
-    transition: all 0.12s;
   }
   .opt:hover { border-color: var(--accent2); }
   .opt.selected { border-color: var(--accent2); background: #0f2a26; color: var(--accent2); }
@@ -82,16 +82,20 @@
     top: 0;
     background: var(--bg);
     padding: 10px 0;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--accent);
     z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   .timer.low { color: #ff6b6b; }
+  .step { color: var(--muted); font-size: 0.9rem; font-weight: 500; }
   .btn {
     display: inline-block;
-    padding: 14px 28px;
+    padding: 14px 22px;
     background: var(--accent);
     color: #fff;
     border: none;
@@ -101,7 +105,6 @@
     cursor: pointer;
     margin-top: 12px;
   }
-  .btn:hover { filter: brightness(1.1); }
   .btn.secondary { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
   .results { display: none; }
   .results.active { display: block; }
@@ -113,54 +116,48 @@
     margin-bottom: 16px;
   }
   .big-num { font-size: 3rem; font-weight: 800; color: var(--accent2); }
-  .bar-wrap { margin: 10px 0; }
   .bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
-  .bar {
-    height: 10px;
-    background: #1c1c28;
-    border-radius: 5px;
-    overflow: hidden;
-  }
-  .bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s; }
+  .bar { height: 10px; background: #1c1c28; border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 5px; }
   .trait-row { margin-bottom: 14px; }
-  .nav { display: flex; justify-content: space-between; margin-top: 20px; }
+  .nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
   <h1>Vault Collective Testing Systems</h1>
   <p class="sub">IQ + personality battery. Original items. Personal use.</p>
-
-  <div class="disclaimer">
-    Personal use only. Not a clinical instrument. No published norms. Not for hiring or firing.
-  </div>
+  <div class="disclaimer">Personal use only. Not a clinical instrument. No published norms. Not for hiring or firing.</div>
 
   <div id="modeSelect" class="mode-select">
-    <button class="mode-btn" data-mode="iq">IQ Test<small>30 items · 12 min timer</small></button>
-    <button class="mode-btn" data-mode="personality">Personality<small>40 items · 5 traits</small></button>
-    <button class="mode-btn" data-mode="full">Full Battery<small>Both, back to back</small></button>
+    <button class="mode-btn" data-mode="iq">IQ Test<small>30 items · 12 min · one at a time</small></button>
+    <button class="mode-btn" data-mode="personality">Personality<small>40 items · 5 traits · one at a time</small></button>
+    <button class="mode-btn" data-mode="full">Full Battery<small>IQ then personality</small></button>
   </div>
 
   <div id="iqSection" class="section">
-    <div class="timer" id="iqTimer">12:00</div>
+    <div class="timer" id="iqTimer"><span id="iqClock">12:00</span><span class="step" id="iqStep">Q 1 of 30</span></div>
     <div id="iqQuestions"></div>
     <div class="nav">
-      <button class="btn secondary" onclick="backToMode()">Back</button>
-      <button class="btn" onclick="submitIQ()">Submit IQ</button>
+      <button class="btn secondary" type="button" onclick="backToMode()">Menu</button>
+      <button class="btn secondary" type="button" onclick="prevQ('iq')">Previous</button>
+      <button class="btn" type="button" onclick="nextQ('iq')">Next</button>
     </div>
   </div>
 
   <div id="personalitySection" class="section">
+    <div class="timer"><span></span><span class="step" id="pStep">Q 1 of 40</span></div>
     <div id="personalityQuestions"></div>
     <div class="nav">
-      <button class="btn secondary" onclick="backToMode()">Back</button>
-      <button class="btn" onclick="submitPersonality()">Submit Personality</button>
+      <button class="btn secondary" type="button" onclick="backToMode()">Menu</button>
+      <button class="btn secondary" type="button" onclick="prevQ('personality')">Previous</button>
+      <button class="btn" type="button" onclick="nextQ('personality')">Next</button>
     </div>
   </div>
 
   <div id="results" class="results">
     <div class="score-card" id="iqResult"></div>
     <div class="score-card" id="personalityResult"></div>
-    <button class="btn" onclick="location.reload()">Retake</button>
+    <button class="btn" type="button" onclick="location.reload()">Retake</button>
   </div>
 
 <script>
@@ -196,11 +193,10 @@ const IQ_ITEMS = [
   {q:"Which comes first alphabetically: Elephant, Eagle, Earth, Egg?", opts:["Eagle","Earth","Egg","Elephant"], a:0},
   {q:"What is the square root of 144?", opts:["10","12","14","16"], a:1}
 ];
-
 const PERSONALITY_ITEMS = [
   {q:"I stay calm when others around me panic.", trait:"stable"},
   {q:"I enjoy being the center of attention at parties.", trait:"gregarious"},
-   {q:"I make decisions quickly without second-guessing.", trait:"decisive"},
+  {q:"I make decisions quickly without second-guessing.", trait:"decisive"},
   {q:"I notice when someone is upset even if they don't say it.", trait:"empathic"},
   {q:"I keep my workspace and schedule highly organized.", trait:"orderly"},
   {q:"Stress rarely gets the best of me.", trait:"stable"},
@@ -239,136 +235,153 @@ const PERSONALITY_ITEMS = [
   {q:"I volunteer for causes I care about.", trait:"empathic"},
   {q:"I keep detailed records and notes.", trait:"orderly"}
 ];
+const TRAIT_LABELS = {stable:"Emotionally Stable",gregarious:"Gregarious",decisive:"Decisive",empathic:"Empathic",orderly:"Orderly"};
+const TRAIT_COLORS = {stable:"#00e5c7",gregarious:"#ff3b6b",decisive:"#ffb800",empathic:"#a855f7",orderly:"#3b82f6"};
 
-const TRAIT_LABELS = {
-  stable: "Emotionally Stable",
-  gregarious: "Gregarious",
-  decisive: "Decisive",
-  empathic: "Empathic",
-  orderly: "Orderly"
-};
-const TRAIT_COLORS = {
-  stable: "#00e5c7", gregarious: "#ff3b6b", decisive: "#ffb800",
-  empathic: "#a855f7", orderly: "#3b82f6"
-};
-
+let currentMode = null;
 let iqAnswers = {};
 let personalityAnswers = {};
 let iqTimerInterval = null;
 let iqTimeLeft = 720;
+let iqIndex = 0;
+let pIndex = 0;
+
+function showOnly(kind) {
+  var id = kind === 'iq' ? 'iqQuestions' : 'personalityQuestions';
+  var idx = kind === 'iq' ? iqIndex : pIndex;
+  var total = kind === 'iq' ? IQ_ITEMS.length : PERSONALITY_ITEMS.length;
+  var nodes = document.querySelectorAll('#' + id + ' .q');
+  nodes.forEach(function(n, i){ n.classList.toggle('visible', i === idx); });
+  var step = kind === 'iq' ? document.getElementById('iqStep') : document.getElementById('pStep');
+  if (step) step.textContent = 'Q ' + (idx + 1) + ' of ' + total;
+}
+function nextQ(kind) {
+  if (kind === 'iq') {
+    if (iqIndex < IQ_ITEMS.length - 1) { iqIndex++; showOnly('iq'); }
+    else submitIQ();
+  } else {
+    if (pIndex < PERSONALITY_ITEMS.length - 1) { pIndex++; showOnly('personality'); }
+    else submitPersonality();
+  }
+}
+function prevQ(kind) {
+  if (kind === 'iq' && iqIndex > 0) { iqIndex--; showOnly('iq'); }
+  if (kind === 'personality' && pIndex > 0) { pIndex--; showOnly('personality'); }
+}
 
 function renderIQ() {
-  const container = document.getElementById('iqQuestions');
+  var container = document.getElementById('iqQuestions');
   container.innerHTML = '';
-  IQ_ITEMS.forEach((item, i) => {
-    const div = document.createElement('div');
-    div.className = 'q';
-    div.innerHTML = `<div class="q-num">Q${i+1}</div><div class="q-text">${item.q}</div><div class="opts" id="iq-opts-${i}"></div>`;
+  iqIndex = 0;
+  IQ_ITEMS.forEach(function(item, i) {
+    var div = document.createElement('div');
+    div.className = 'q' + (i === 0 ? ' visible' : '');
+    div.innerHTML = '<div class="q-num">Q' + (i+1) + '</div><div class="q-text"></div><div class="opts"></div>';
+    div.querySelector('.q-text').textContent = item.q;
     container.appendChild(div);
-    const optsDiv = div.querySelector('.opts');
-    item.opts.forEach((opt, j) => {
-      const btn = document.createElement('button');
+    var optsDiv = div.querySelector('.opts');
+    item.opts.forEach(function(opt, j) {
+      var btn = document.createElement('button');
       btn.className = 'opt';
+      btn.type = 'button';
       btn.textContent = opt;
-      btn.onclick = () => {
-        optsDiv.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+      btn.onclick = function() {
+        optsDiv.querySelectorAll('.opt').forEach(function(o){ o.classList.remove('selected'); });
         btn.classList.add('selected');
         iqAnswers[i] = j;
       };
       optsDiv.appendChild(btn);
     });
   });
+  showOnly('iq');
 }
 
 function renderPersonality() {
-  const container = document.getElementById('personalityQuestions');
+  var container = document.getElementById('personalityQuestions');
   container.innerHTML = '';
-  PERSONALITY_ITEMS.forEach((item, i) => {
-    const div = document.createElement('div');
-    div.className = 'q';
-    div.innerHTML = `<div class="q-num">Q${i+1}</div><div class="q-text">${item.q}</div><div class="opts" id="p-opts-${i}"></div>`;
+  pIndex = 0;
+  PERSONALITY_ITEMS.forEach(function(item, i) {
+    var div = document.createElement('div');
+    div.className = 'q' + (i === 0 ? ' visible' : '');
+    div.innerHTML = '<div class="q-num">Q' + (i+1) + '</div><div class="q-text"></div><div class="opts"></div>';
+    div.querySelector('.q-text').textContent = item.q;
     container.appendChild(div);
-    const optsDiv = div.querySelector('.opts');
-    ['Disagree','Neutral','Agree'].forEach((label, j) => {
-      const btn = document.createElement('button');
+    var optsDiv = div.querySelector('.opts');
+    ['Disagree','Neutral','Agree'].forEach(function(label, j) {
+      var btn = document.createElement('button');
       btn.className = 'opt';
+      btn.type = 'button';
       btn.textContent = label;
-      btn.onclick = () => {
-        optsDiv.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+      btn.onclick = function() {
+        optsDiv.querySelectorAll('.opt').forEach(function(o){ o.classList.remove('selected'); });
         btn.classList.add('selected');
         personalityAnswers[i] = j;
       };
       optsDiv.appendChild(btn);
     });
   });
+  showOnly('personality');
 }
 
 function startIQTimer() {
   iqTimeLeft = 720;
-  const timerEl = document.getElementById('iqTimer');
+  var timerEl = document.getElementById('iqTimer');
+  var clock = document.getElementById('iqClock');
   timerEl.classList.remove('low');
   if (iqTimerInterval) clearInterval(iqTimerInterval);
-  iqTimerInterval = setInterval(() => {
+  iqTimerInterval = setInterval(function() {
     iqTimeLeft--;
-    const m = Math.floor(iqTimeLeft / 60);
-    const s = iqTimeLeft % 60;
-    timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    var m = Math.floor(iqTimeLeft / 60);
+    var s = String(iqTimeLeft % 60).padStart(2,'0');
+    clock.textContent = m + ':' + s;
     if (iqTimeLeft <= 60) timerEl.classList.add('low');
-    if (iqTimeLeft <= 0) {
-      clearInterval(iqTimerInterval);
-      submitIQ();
-    }
+    if (iqTimeLeft <= 0) { clearInterval(iqTimerInterval); submitIQ(); }
   }, 1000);
 }
 
 function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById(id).classList.add('active');
   document.getElementById('modeSelect').style.display = 'none';
   document.getElementById('results').classList.remove('active');
   window.scrollTo(0, 0);
 }
-
 function backToMode() {
   if (iqTimerInterval) clearInterval(iqTimerInterval);
   document.getElementById('modeSelect').style.display = 'flex';
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(function(s){ s.classList.remove('active'); });
   document.getElementById('results').classList.remove('active');
 }
 
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.onclick = () => {
-    const mode = btn.dataset.mode;
-    if (mode === 'iq') { renderIQ(); showSection('iqSection'); startIQTimer(); }
-    else if (mode === 'personality') { renderPersonality(); showSection('personalitySection'); }
-    else if (mode === 'full') { renderIQ(); renderPersonality(); showSection('iqSection'); startIQTimer(); }
+document.querySelectorAll('.mode-btn').forEach(function(btn) {
+  btn.onclick = function() {
+    document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    if (currentMode === 'iq') { renderIQ(); showSection('iqSection'); startIQTimer(); }
+    else if (currentMode === 'personality') { renderPersonality(); showSection('personalitySection'); }
+    else if (currentMode === 'full') { renderIQ(); renderPersonality(); showSection('iqSection'); startIQTimer(); }
   };
 });
 
 function submitIQ() {
   if (iqTimerInterval) clearInterval(iqTimerInterval);
-  let correct = 0;
-  IQ_ITEMS.forEach((item, i) => {
-    if (iqAnswers[i] === item.a) correct++;
-  });
-  const gender = prompt("For the classic Novis-style bonus: are you male or female?", "male");
-  const bonus = (gender && gender.toLowerCase().startsWith('f')) ? 70 : 75;
-  const raw = correct + bonus;
-  const estimatedIQ = Math.round(70 + (raw / 105) * 60);
-  const clamped = Math.max(55, Math.min(160, estimatedIQ));
-
-  const resultEl = document.getElementById('iqResult');
-  resultEl.innerHTML = `
-    <h2 style="margin-bottom:12px;">IQ Results</h2>
-    <div class="big-num">${clamped}</div>
-    <p style="color:var(--muted);margin:8px 0 16px;">Estimated IQ (Novis-style: ${correct}/30 correct + ${bonus} bonus = ${raw} raw)</p>
-    <p style="font-size:0.85rem;color:var(--muted);">Personal use. Estimated mapping from raw score.</p>
-  `;
-
-  const fullActive = Array.from(document.querySelectorAll('.mode-btn')).find(b => b.classList.contains('active'))?.dataset.mode === 'full';
-  if (fullActive) {
+  var correct = 0;
+  IQ_ITEMS.forEach(function(item, i){ if (iqAnswers[i] === item.a) correct++; });
+  var bonus = 75;
+  var raw = correct + bonus;
+  var clamped = Math.max(55, Math.min(160, Math.round(70 + (raw / 105) * 60)));
+  document.getElementById('iqResult').innerHTML =
+    '<h2 style="margin-bottom:12px;">IQ Results</h2>' +
+    '<div class="big-num">' + clamped + '</div>' +
+    '<p style="color:var(--muted);margin:8px 0 16px;">Estimated IQ (' + correct + '/30 correct + ' + bonus + ' bonus = ' + raw + ' raw)</p>' +
+    '<p style="font-size:0.85rem;color:var(--muted);">Personal use. Estimated mapping from raw score.</p>';
+  if (currentMode === 'full') {
+    pIndex = 0;
+    showOnly('personality');
     showSection('personalitySection');
   } else {
+    document.getElementById('personalityResult').innerHTML = '';
     document.getElementById('results').classList.add('active');
     document.getElementById('modeSelect').style.display = 'none';
     window.scrollTo(0, 0);
@@ -376,36 +389,26 @@ function submitIQ() {
 }
 
 function submitPersonality() {
-  const scores = {stable:0, gregarious:0, decisive:0, empathic:0, orderly:0};
-  const counts = {stable:0, gregarious:0, decisive:0, empathic:0, orderly:0};
-  PERSONALITY_ITEMS.forEach((item, i) => {
-    const val = personalityAnswers[i] ?? 1;
-    scores[item.trait] += val;
+  var scores = {stable:0, gregarious:0, decisive:0, empathic:0, orderly:0};
+  var counts = {stable:0, gregarious:0, decisive:0, empathic:0, orderly:0};
+  PERSONALITY_ITEMS.forEach(function(item, i) {
+    scores[item.trait] += (personalityAnswers[i] != null ? personalityAnswers[i] : 1);
     counts[item.trait]++;
   });
-  const avgs = {};
-  for (const t in scores) avgs[t] = (scores[t] / (counts[t] * 2)) * 100;
-
-  let top = Object.entries(avgs).sort((a,b) => b[1]-a[1])[0];
-  let weak = Object.entries(avgs).sort((a,b) => a[1]-b[1])[0];
-
-  let bars = '';
-  for (const t in avgs) {
-    bars += `<div class="trait-row">
-      <div class="bar-label"><span>${TRAIT_LABELS[t]}</span><span>${Math.round(avgs[t])}%</span></div>
-      <div class="bar"><div class="bar-fill" style="width:${avgs[t]}%;background:${TRAIT_COLORS[t]}"></div></div>
-    </div>`;
+  var avgs = {};
+  for (var t in scores) avgs[t] = (scores[t] / (counts[t] * 2)) * 100;
+  var ranked = Object.entries(avgs).sort(function(a,b){ return b[1]-a[1]; });
+  var bars = '';
+  for (var k in avgs) {
+    bars += '<div class="trait-row"><div class="bar-label"><span>' + TRAIT_LABELS[k] + '</span><span>' + Math.round(avgs[k]) +
+      '%</span></div><div class="bar"><div class="bar-fill" style="width:' + avgs[k] + '%;background:' + TRAIT_COLORS[k] + '"></div></div></div>';
   }
-
-  const resultEl = document.getElementById('personalityResult');
-  resultEl.innerHTML = `
-    <h2 style="margin-bottom:12px;">Personality Profile</h2>
-    ${bars}
-    <p style="margin-top:16px;font-size:0.9rem;">Dominant trait: <strong style="color:${TRAIT_COLORS[top[0]]}">${TRAIT_LABELS[top[0]]}</strong> (${Math.round(top[1])}%)</p>
-    <p style="font-size:0.9rem;">Weakest trait: <strong style="color:${TRAIT_COLORS[weak[0]]}">${TRAIT_LABELS[weak[0]]}</strong> (${Math.round(weak[1])}%)</p>
-    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Self-report profile for personal use.</p>
-  `;
-
+  document.getElementById('personalityResult').innerHTML =
+    '<h2 style="margin-bottom:12px;">Personality Profile</h2>' + bars +
+    '<p style="margin-top:16px;font-size:0.9rem;">Dominant trait: <strong style="color:' + TRAIT_COLORS[ranked[0][0]] + '">' + TRAIT_LABELS[ranked[0][0]] + '</strong> (' + Math.round(ranked[0][1]) + '%)</p>' +
+    '<p style="font-size:0.9rem;">Weakest trait: <strong style="color:' + TRAIT_COLORS[ranked[ranked.length-1][0]] + '">' + TRAIT_LABELS[ranked[ranked.length-1][0]] + '</strong> (' + Math.round(ranked[ranked.length-1][1]) + '%)</p>' +
+    '<p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Self-report profile for personal use.</p>';
+  if (currentMode === 'personality') document.getElementById('iqResult').innerHTML = '';
   document.getElementById('results').classList.add('active');
   document.getElementById('modeSelect').style.display = 'none';
   window.scrollTo(0, 0);
