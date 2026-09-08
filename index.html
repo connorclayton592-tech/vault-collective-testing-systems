@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vault Collective Testing Systems</title>
+<style>
+  :root {
+    --bg: #0d0d12;
+    --panel: #16161f;
+    --accent: #ff3b6b;
+    --accent2: #00e5c7;
+    --text: #e8e8f0;
+    --muted: #8a8aa0;
+    --border: #2a2a3a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 20px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 1.8rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+  .disclaimer {
+    background: #1f1a1a;
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    margin-bottom: 28px;
+    font-size: 0.85rem;
+    color: #c8b8b8;
+  }
+  .mode-select { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+  .mode-btn {
+    flex: 1;
+    min-width: 140px;
+    padding: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .mode-btn.active { border-color: var(--accent); background: #1f1418; }
+  .mode-btn small { display: block; color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .q {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .q-num { color: var(--accent); font-weight: 700; font-size: 0.8rem; }
+  .q-text { margin: 8px 0 12px; font-size: 1.02rem; }
+  .opts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .opt {
+    flex: 1;
+    min-width: 90px;
+    padding: 10px 14px;
+    background: #1c1c28;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.9rem;
+    transition: all 0.12s;
+  }
+  .opt:hover { border-color: var(--accent2); }
+  .opt.selected { border-color: var(--accent2); background: #0f2a26; color: var(--accent2); }
+  .timer {
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    padding: 10px 0;
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    z-index: 10;
+  }
+  .timer.low { color: #ff6b6b; }
+  .btn {
+    display: inline-block;
+    padding: 14px 28px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.secondary { background: var(--panel); border: 1px solid var(--border); color: var(--text); }
+  .results { display: none; }
+  .results.active { display: block; }
+  .score-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .big-num { font-size: 3rem; font-weight: 800; color: var(--accent2); }
+  .bar-wrap { margin: 10px 0; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+  .bar {
+    height: 10px;
+    background: #1c1c28;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 5px; transition: width 0.6s; }
+  .trait-row { margin-bottom: 14px; }
+  .nav { display: flex; justify-content: space-between; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <h1>Vault Collective Testing Systems</h1>
+  <p class="sub">IQ + personality battery. Original items. For development and self-reflection only.</p>
+
+  <div class="disclaimer">
+    Not a clinical instrument. No published norms, no peer-reviewed validation. Scores are entertainment only — not for hiring, firing, or any real-world decision.
+  </div>
+
+  <div id="modeSelect" class="mode-select">
+    <button class="mode-btn" data-mode="iq">IQ Test<small>30 items · 12 min timer</small></button>
+    <button class="mode-btn" data-mode="personality">Personality<small>40 items · 5 traits</small></button>
+    <button class="mode-btn" data-mode="full">Full Battery<small>Both, back to back</small></button>
+  </div>
+
+  <div id="iqSection" class="section">
+    <div class="timer" id="iqTimer">12:00</div>
+    <div id="iqQuestions"></div>
+    <div class="nav">
+      <button class="btn secondary" onclick="backToMode()">Back</button>
+      <button class="btn" onclick="submitIQ()">Submit IQ</button>
+    </div>
+  </div>
+
+  <div id="personalitySection" class="section">
+    <div id="personalityQuestions"></div>
+    <div class="nav">
+      <button class="btn secondary" onclick="backToMode()">Back</button>
+      <button class="btn" onclick="submitPersonality()">Submit Personality</button>
+    </div>
+  </div>
+
+  <div id="results" class="results">
+    <div class="score-card" id="iqResult"></div>
+    <div class="score-card" id="personalityResult"></div>
+    <button class="btn" onclick="location.reload()">Retake</button>
+  </div>
+
+<script>
+const IQ_ITEMS = [
+  {q:"What number comes next: 2, 6, 12, 20, 30, ?", opts:["40","42","44","48"], a:1},
+  {q:"If 3x + 7 = 22, what is x?", opts:["3","5","7","15"], a:1},
+  {q:"Which is the odd one out: Apple, Banana, Carrot, Grape?", opts:["Apple","Banana","Carrot","Grape"], a:2},
+  {q:"Complete: Book is to Reading as Fork is to ?", opts:["Eating","Kitchen","Metal","Cooking"], a:0},
+  {q:"What is 15% of 240?", opts:["24","36","48","60"], a:1},
+  {q:"Which number does not belong: 3, 5, 7, 9, 11?", opts:["3","5","7","9"], a:3},
+  {q:"If all Bloops are Razzies and all Razzies are Lazzies, are all Bloops Lazzies?", opts:["Yes","No","Maybe","Cannot tell"], a:0},
+  {q:"What comes next: A, C, F, J, O, ?", opts:["T","U","V","W"], a:1},
+  {q:"A bat and a ball cost $1.10 total. The bat costs $1 more than the ball. How much is the ball?", opts:["5 cents","10 cents","15 cents","20 cents"], a:1},
+  {q:"Which shape has the most sides: triangle, pentagon, hexagon, square?", opts:["Triangle","Pentagon","Hexagon","Square"], a:2},
+  {q:"If 2^4 = 16, what is 2^6?", opts:["32","48","64","128"], a:2},
+  {q:"Complete: 1, 1, 2, 3, 5, 8, ?", opts:["11","13","15","21"], a:1},
+  {q:"A clock shows 3:00. What is the angle between the hour and minute hands?", opts:["60°","90°","120°","180°"], a:1},
+  {q:"Which word does not belong: Run, Jump, Swim, Table?", opts:["Run","Jump","Swim","Table"], a:3},
+  {q:"If a train travels 60 mph for 2.5 hours, how far does it go?", opts:["120","150","180","240"], a:1},
+  {q:"Complete: Z, Y, X, W, ?", opts:["U","V","T","S"], a:1},
+  {q:"What is the next prime after 17?", opts:["18","19","21","23"], a:1},
+  {q:"A square has a perimeter of 36. What is its area?", opts:["36","81","144","324"], a:1},
+  {q:"Which is heavier: 1 kg of feathers or 1 kg of steel?", opts:["Feathers","Steel","Same","Cannot tell"], a:2},
+  {q:"If today is Wednesday, what day is it in 10 days?", opts:["Saturday","Sunday","Monday","Tuesday"], a:1},
+  {q:"Complete: 5, 10, 20, 40, ?", opts:["60","70","80","100"], a:2},
+  {q:"How many triangles in a triangle divided into 4 smaller ones?", opts:["3","4","5","6"], a:1},
+  {q:"If 8 workers build a wall in 6 days, how many days for 12 workers?", opts:["3","4","5","8"], a:1},
+  {q:"Which is the capital of Australia?", opts:["Sydney","Melbourne","Canberra","Perth"], a:2},
+  {q:"What is 7 x 8 + 6?", opts:["56","62","64","70"], a:1},
+  {q:"Complete: Monday, Thursday, Sunday, Wednesday, ?", opts:["Saturday","Friday","Tuesday","Monday"], a:0},
+  {q:"A cube has how many edges?", opts:["6","8","12","24"], a:2},
+  {q:"If 3/4 of a number is 27, what is the number?", opts:["20","27","36","54"], a:2},
+  {q:"Which comes first alphabetically: Elephant, Eagle, Earth, Egg?", opts:["Eagle","Earth","Egg","Elephant"], a:0},
+  {q:"What is the square root of 144?", opts:["10","12","14","16"], a:1}
+];
+
+const PERSONALITY_ITEMS = [
+  {q:"I stay calm when others around me panic.", trait:"stable"},
+  {q:"I enjoy being the center of attention at parties.", trait:"gregarious"},
+  {q:"I make decisions quickly without second-guessing.", trait:"decisive"},
+  {q:"I notice when someone is upset even if they don't say it.", trait:"empathic"},
+  {q:"I keep my workspace and schedule highly organized.", trait:"orderly"},
+  {q:"Stress rarely gets the best of me.", trait:"stable"},
+  {q:"I have a large circle of friends and acquaintances.", trait:"gregarious"},
+  {q:"I prefer to take charge rather than follow.", trait:"decisive"},
+  {q:"I feel others' pain almost as if it were my own.", trait:"empathic"},
+  {q:"I plan my day down to the hour.", trait:"orderly"},
+  {q:"I bounce back fast after setbacks.", trait:"stable"},
+  {q:"Silence in a group makes me uncomfortable.", trait:"gregarious"},
+  {q:"I rarely change my mind once it's made.", trait:"decisive"},
+  {q:"I go out of my way to help strangers.", trait:"empathic"},
+  {q:"I hate clutter and mess.", trait:"orderly"},
+  {q:"Bad news barely phases me.", trait:"stable"},
+  {q:"I'd rather host than attend.", trait:"gregarious"},
+  {q:"I trust my gut over long deliberation.", trait:"decisive"},
+  {q:"I cry at movies more than most people.", trait:"empathic"},
+  {q:"I color-code my calendar.", trait:"orderly"},
+  {q:"I stay level-headed in emergencies.", trait:"stable"},
+  {q:"I strike up conversations with strangers easily.", trait:"gregarious"},
+  {q:"I hate being told what to do.", trait:"decisive"},
+  {q:"I remember birthdays and small details about people.", trait:"empathic"},
+  {q:"I make lists for everything.", trait:"orderly"},
+  {q:"Anger passes through me quickly.", trait:"stable"},
+  {q:"I get energy from being around people.", trait:"gregarious"},
+  {q:"I speak my mind even when it's unpopular.", trait:"decisive"},
+  {q:"I feel responsible for others' happiness.", trait:"empathic"},
+  {q:"I return things to their exact place.", trait:"orderly"},
+  {q:"I rarely lose sleep over problems.", trait:"stable"},
+  {q:"I prefer group activities to solo ones.", trait:"gregarious"},
+  {q:"I take initiative without being asked.", trait:"decisive"},
+  {q:"I avoid hurting people's feelings even when necessary.", trait:"empathic"},
+  {q:"I follow routines religiously.", trait:"orderly"},
+  {q:"Criticism rolls off my back.", trait:"stable"},
+  {q:"I talk a lot in social settings.", trait:"gregarious"},
+  {q:"I enjoy leading projects.", trait:"decisive"},
+  {q:"I volunteer for causes I care about.", trait:"empathic"},
+  {q:"I keep detailed records and notes.", trait:"orderly"}
+];
+
+const TRAIT_LABELS = {
+  stable: "Emotionally Stable",
+  gregarious: "Gregarious",
+  decisive: "Decisive",
+  empathic: "Empathic",
+  orderly: "Orderly"
+};
+const TRAIT_COLORS = {
+  stable: "#00e5c7", gregarious: "#ff3b6b", decisive: "#ffb800",
+  empathic: "#a855f7", orderly: "#3b82f6"
+};
+
+let iqAnswers = {};
+let personalityAnswers = {};
+let iqTimerInterval = null;
+let iqTimeLeft = 720;
+
+function renderIQ() {
+  const container = document.getElementById('iqQuestions');
+  container.innerHTML = '';
+  IQ_ITEMS.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'q';
+    div.innerHTML = `<div class="q-num">Q${i+1}</div><div class="q-text">${item.q}</div><div class="opts" id="iq-opts-${i}"></div>`;
+    container.appendChild(div);
+    const optsDiv = div.querySelector('.opts');
+    item.opts.forEach((opt, j) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        optsDiv.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+        btn.classList.add('selected');
+        iqAnswers[i] = j;
+      };
+      optsDiv.appendChild(btn);
+    });
+  });
+}
+
+function renderPersonality() {
+  const container = document.getElementById('personalityQuestions');
+  container.innerHTML = '';
+  PERSONALITY_ITEMS.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'q';
+    div.innerHTML = `<div class="q-num">Q${i+1}</div><div class="q-text">${item.q}</div><div class="opts" id="p-opts-${i}"></div>`;
+    container.appendChild(div);
+    const optsDiv = div.querySelector('.opts');
+    ['Disagree','Neutral','Agree'].forEach((label, j) => {
+      const btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.textContent = label;
+      btn.onclick = () => {
+        optsDiv.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+        btn.classList.add('selected');
+        personalityAnswers[i] = j;
+      };
+      optsDiv.appendChild(btn);
+    });
+  });
+}
+
+function startIQTimer() {
+  iqTimeLeft = 720;
+  const timerEl = document.getElementById('iqTimer');
+  timerEl.classList.remove('low');
+  if (iqTimerInterval) clearInterval(iqTimerInterval);
+  iqTimerInterval = setInterval(() => {
+    iqTimeLeft--;
+    const m = Math.floor(iqTimeLeft / 60);
+    const s = iqTimeLeft % 60;
+    timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    if (iqTimeLeft <= 60) timerEl.classList.add('low');
+    if (iqTimeLeft <= 0) {
+      clearInterval(iqTimerInterval);
+      submitIQ();
+    }
+  }, 1000);
+}
+
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('modeSelect').style.display = 'none';
+  document.getElementById('results').classList.remove('active');
+  window.scrollTo(0, 0);
+}
+
+function backToMode() {
+  if (iqTimerInterval) clearInterval(iqTimerInterval);
+  document.getElementById('modeSelect').style.display = 'flex';
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('results').classList.remove('active');
+}
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.onclick = () => {
+    const mode = btn.dataset.mode;
+    if (mode === 'iq') { renderIQ(); showSection('iqSection'); startIQTimer(); }
+    else if (mode === 'personality') { renderPersonality(); showSection('personalitySection'); }
+    else if (mode === 'full') { renderIQ(); renderPersonality(); showSection('iqSection'); startIQTimer(); }
+  };
+});
+
+function submitIQ() {
+  if (iqTimerInterval) clearInterval(iqTimerInterval);
+  let correct = 0;
+  IQ_ITEMS.forEach((item, i) => {
+    if (iqAnswers[i] === item.a) correct++;
+  });
+  const gender = prompt("For the classic Novis-style bonus: are you male or female?", "male");
+  const bonus = (gender && gender.toLowerCase().startsWith('f')) ? 70 : 75;
+  const raw = correct + bonus;
+  const estimatedIQ = Math.round(70 + (raw / 105) * 60);
+  const clamped = Math.max(55, Math.min(160, estimatedIQ));
+
+  const resultEl = document.getElementById('iqResult');
+  resultEl.innerHTML = `
+    <h2 style="margin-bottom:12px;">IQ Results</h2>
+    <div class="big-num">${clamped}</div>
+    <p style="color:var(--muted);margin:8px 0 16px;">Estimated IQ (Novis-style: ${correct}/30 correct + ${bonus} bonus = ${raw} raw)</p>
+    <p style="font-size:0.85rem;color:var(--muted);">This is a toy mapping, not a real norm. A free online test's margin of error is bigger than most score differences.</p>
+  `;
+
+  const fullActive = Array.from(document.querySelectorAll('.mode-btn')).find(b => b.classList.contains('active'))?.dataset.mode === 'full';
+  if (fullActive) {
+    showSection('personalitySection');
+  } else {
+    document.getElementById('results').classList.add('active');
+    document.getElementById('modeSelect').style.display = 'none';
+    window.scrollTo(0, 0);
+  }
+}
+
+function submitPersonality() {
+  const scores = {stable:0, gregarious:0, decisive:0, empathic:0, orderly:0};
+  const counts = {stable:0, gregarious:0, decisive:0, empathic:0, orderly:0};
+  PERSONALITY_ITEMS.forEach((item, i) => {
+    const val = personalityAnswers[i] ?? 1;
+    scores[item.trait] += val;
+    counts[item.trait]++;
+  });
+  const avgs = {};
+  for (const t in scores) avgs[t] = (scores[t] / (counts[t] * 2)) * 100;
+
+  let top = Object.entries(avgs).sort((a,b) => b[1]-a[1])[0];
+  let weak = Object.entries(avgs).sort((a,b) => a[1]-b[1])[0];
+
+  let bars = '';
+  for (const t in avgs) {
+    bars += `<div class="trait-row">
+      <div class="bar-label"><span>${TRAIT_LABELS[t]}</span><span>${Math.round(avgs[t])}%</span></div>
+      <div class="bar"><div class="bar-fill" style="width:${avgs[t]}%;background:${TRAIT_COLORS[t]}"></div></div>
+    </div>`;
+  }
+
+  const resultEl = document.getElementById('personalityResult');
+  resultEl.innerHTML = `
+    <h2 style="margin-bottom:12px;">Personality Profile</h2>
+    ${bars}
+    <p style="margin-top:16px;font-size:0.9rem;">Dominant trait: <strong style="color:${TRAIT_COLORS[top[0]]}">${TRAIT_LABELS[top[0]]}</strong> (${Math.round(top[1])}%)</p>
+    <p style="font-size:0.9rem;">Weakest trait: <strong style="color:${TRAIT_COLORS[weak[0]]}">${TRAIT_LABELS[weak[0]]}</strong> (${Math.round(weak[1])}%)</p>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Self-report, not validated. People lie on these. You probably did.</p>
+  `;
+
+  document.getElementById('results').classList.add('active');
+  document.getElementById('modeSelect').style.display = 'none';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
