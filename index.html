@@ -128,10 +128,10 @@
 </head>
 <body>
   <h1>Vault Collective Testing Systems</h1>
-  <p class="sub">IQ + personality battery. Original items. For development and self-reflection only.</p>
+  <p class="sub">IQ + personality battery. Original items. Personal use.</p>
 
   <div class="disclaimer">
-    Not a clinical instrument. No published norms, no peer-reviewed validation. Scores are entertainment only — not for hiring, firing, or any real-world decision.
+    Personal use only. Not a clinical instrument. No published norms. Not for hiring or firing.
   </div>
 
   <div id="modeSelect" class="mode-select">
@@ -200,7 +200,7 @@ const IQ_ITEMS = [
 const PERSONALITY_ITEMS = [
   {q:"I stay calm when others around me panic.", trait:"stable"},
   {q:"I enjoy being the center of attention at parties.", trait:"gregarious"},
-  {q:"I make decisions quickly without second-guessing.", trait:"decisive"},
+   {q:"I make decisions quickly without second-guessing.", trait:"decisive"},
   {q:"I notice when someone is upset even if they don't say it.", trait:"empathic"},
   {q:"I keep my workspace and schedule highly organized.", trait:"orderly"},
   {q:"Stress rarely gets the best of me.", trait:"stable"},
@@ -362,7 +362,7 @@ function submitIQ() {
     <h2 style="margin-bottom:12px;">IQ Results</h2>
     <div class="big-num">${clamped}</div>
     <p style="color:var(--muted);margin:8px 0 16px;">Estimated IQ (Novis-style: ${correct}/30 correct + ${bonus} bonus = ${raw} raw)</p>
-    <p style="font-size:0.85rem;color:var(--muted);">This is a toy mapping, not a real norm. A free online test's margin of error is bigger than most score differences.</p>
+    <p style="font-size:0.85rem;color:var(--muted);">Personal use. Estimated mapping from raw score.</p>
   `;
 
   const fullActive = Array.from(document.querySelectorAll('.mode-btn')).find(b => b.classList.contains('active'))?.dataset.mode === 'full';
@@ -403,7 +403,7 @@ function submitPersonality() {
     ${bars}
     <p style="margin-top:16px;font-size:0.9rem;">Dominant trait: <strong style="color:${TRAIT_COLORS[top[0]]}">${TRAIT_LABELS[top[0]]}</strong> (${Math.round(top[1])}%)</p>
     <p style="font-size:0.9rem;">Weakest trait: <strong style="color:${TRAIT_COLORS[weak[0]]}">${TRAIT_LABELS[weak[0]]}</strong> (${Math.round(weak[1])}%)</p>
-    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Self-report, not validated. People lie on these. You probably did.</p>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px;">Self-report profile for personal use.</p>
   `;
 
   document.getElementById('results').classList.add('active');
